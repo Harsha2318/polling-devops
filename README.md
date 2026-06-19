@@ -148,6 +148,8 @@ Recommended flow:
 
 The namespace used for the application workloads is `polling-app`.
 
+For this temporary EKS demo flow, MySQL is intentionally configured with ephemeral storage inside the cluster so the application can start without adding extra storage setup. That is acceptable for short-lived testing, but not for production data retention.
+
 Example Argo CD install and bootstrap flow:
 
 ```bash
