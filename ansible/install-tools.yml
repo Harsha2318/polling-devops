@@ -1,0 +1,47 @@
+---
+- name: Install DevOps tools on Ubuntu hosts
+  hosts: devops
+  become: true
+  tasks:
+    - name: Install common packages
+      apt:
+        name:
+          - git
+          - unzip
+          - wget
+          - curl
+          - jq
+          - maven
+          - npm
+        update_cache: true
+        state: present
+
+    - name: Install kubectl
+      shell: |
+        curl -fsSLo /usr/local/bin/kubectl https://dl.k8s.io/release/v1.30.1/bin/linux/amd64/kubectl
+        chmod +x /usr/local/bin/kubectl
+      args:
+        creates: /usr/local/bin/kubectl
+
+    - name: Install Trivy
+      shell: |
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | tee /usr/share/keyrings/trivy.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | tee /etc/apt/sources.list.d/trivy.list > /dev/null
+        apt-get update
+        apt-get install -y trivy
+      args:
+        creates: /usr/bin/trivy
+
+    - name: Install Terraform
+      unarchive:
+        src: https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip
+        dest: /usr/local/bin
+        remote_src: true
+        creates: /usr/local/bin/terraform
+
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+

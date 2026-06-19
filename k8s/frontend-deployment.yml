@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-frontend
+  namespace: polling-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: voting-frontend
+  template:
+    metadata:
+      labels:
+        app: voting-frontend
+    spec:
+      containers:
+        - name: voting-frontend
+          image: voting-frontend
+          ports:
+            - containerPort: 80

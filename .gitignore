@@ -1,0 +1,14 @@
+.env
+*.log
+.DS_Store
+.idea
+.vscode
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+ansible/inventory.ini
+kubeconfig
+trivy-report.txt
+junit.xml
+

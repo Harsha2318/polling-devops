@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: polling
+  namespace: argocd
+spec:
+  description: GitOps project for the polling application
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: polling-app
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

@@ -1,0 +1,33 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: voting_app_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+
+  backend:
+    image: ${BACKEND_IMAGE:-voting-backend:latest}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/voting_app_db
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-voting-frontend:latest}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "80:80"
+
+volumes:
+  mysql_prod_data:
+

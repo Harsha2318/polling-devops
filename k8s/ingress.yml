@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: polling-ingress
+  namespace: polling-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: polling.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: voting-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: voting-frontend
+                port:
+                  number: 80

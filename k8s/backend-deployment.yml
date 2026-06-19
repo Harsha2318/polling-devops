@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-backend
+  namespace: polling-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: voting-backend
+  template:
+    metadata:
+      labels:
+        app: voting-backend
+    spec:
+      containers:
+        - name: voting-backend
+          image: voting-backend
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              value: jdbc:mysql://mysql:3306/voting_app_db
+            - name: DB_USERNAME
+              value: root
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
