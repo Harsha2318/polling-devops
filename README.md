@@ -1,6 +1,6 @@
 # polling-devops
 
-This repository is the DevOps layer for the polling application. It brings together the backend from [Harsha2318/voting_app](https://github.com/Harsha2318/voting_app) and the frontend from [Harsha2318/Polling_Application](https://github.com/Harsha2318/Polling_Application), then runs them alongside supporting tools like MySQL, Prometheus, Grafana, SonarQube, and Nexus.
+This repository is the DevOps layer for the polling application. It now contains the backend source, frontend source, GitOps manifests, Terraform, and CI/CD automation in one place so Jenkins can build everything directly from this repository.
 
 This repository now covers the first full DevOps workflow for the polling application: local Compose, Jenkins CI, SonarQube analysis, Nexus image storage, Trivy security scanning, Kubernetes deployment manifests, Terraform AWS provisioning, Argo CD GitOps delivery, and monitoring references.
 
@@ -25,18 +25,19 @@ polling-devops/
 |-- .env.example
 |-- README.md
 |-- argocd/
+|-- backend/
+|-- frontend/
 |-- k8s/
 |-- scripts/
 |-- terraform/
 `-- monitoring/
 ```
 
-## Connected repositories
+## Source layout
 
-- Backend repo: [Harsha2318/voting_app](https://github.com/Harsha2318/voting_app)
-- Frontend repo: [Harsha2318/Polling_Application](https://github.com/Harsha2318/Polling_Application)
-
-The backend image is expected to be available locally as `voting-backend:latest` and the frontend image as `voting-frontend:latest` unless you override the tag with `IMAGE_TAG`.
+- `backend/` contains the Spring Boot application source and backend Dockerfile
+- `frontend/` contains the Angular application source and frontend Dockerfile
+- Jenkins builds both directly from this repo and does not need to clone separate application repositories
 
 ## Prerequisites
 
@@ -46,21 +47,21 @@ The backend image is expected to be available locally as `voting-backend:latest`
   - `Polling_Application`
 - Ports `80`, `3000`, `3306`, `8080`, `8081`, `8082`, `9000`, and `9090` available on your machine
 
-## Build the backend image
+## Build the backend image locally
 
-From your backend repository:
+From this repository:
 
 ```bash
-cd voting_app
+cd backend
 docker build -t voting-backend:latest .
 ```
 
-## Build the frontend image
+## Build the frontend image locally
 
-From your frontend repository:
+From this repository:
 
 ```bash
-cd Polling_Application
+cd frontend
 docker build -t voting-frontend:latest .
 ```
 
@@ -79,16 +80,15 @@ Then update `MYSQL_ROOT_PASSWORD` and any other values you want to change before
 The `Jenkinsfile` is designed for the next CI/CD milestone and follows this order:
 
 1. Check out this DevOps repository
-2. Clone the backend and frontend application repositories
-3. Build and test the backend
-4. Build the frontend
-5. Run SonarQube analysis for both repos
-6. Wait for the quality gate
-7. Build Docker images
-8. Run Trivy image scans
-9. Push images to Amazon ECR
-10. Update GitOps image tags in this repository
-11. Let Argo CD sync the Kubernetes cluster
+2. Build and test the backend from `backend/`
+3. Build the frontend from `frontend/`
+4. Run SonarQube analysis for both repos
+5. Wait for the quality gate
+6. Build Docker images
+7. Run Trivy image scans
+8. Push images to Amazon ECR
+9. Update GitOps image tags in this repository
+10. Let Argo CD sync the Kubernetes cluster
 
 Expected Jenkins setup:
 
@@ -107,6 +107,8 @@ Expected Jenkins setup:
   - `sonarqube-server`
 
 For the final GitOps push stage, Jenkins also needs permission to push commits back to the DevOps repository branch that Argo CD watches.
+
+For a cleaner AWS setup, Jenkins should run on a separate EC2 build machine with Docker, Maven, Node.js, AWS CLI, and Kustomize installed.
 
 ## ECR image push notes
 

@@ -8,10 +8,9 @@ pipeline {
   }
 
   environment {
-    BACKEND_REPO = 'https://github.com/Harsha2318/voting_app.git'
-    FRONTEND_REPO = 'https://github.com/Harsha2318/Polling_Application.git'
     IMAGE_TAG = "${env.BUILD_NUMBER}"
     AWS_REGION = 'ap-south-1'
+    AWS_ACCOUNT_ID = '140311410153'
     ECR_REGISTRY = '140311410153.dkr.ecr.ap-south-1.amazonaws.com'
     BACKEND_IMAGE = "${ECR_REGISTRY}/polling-backend:${IMAGE_TAG}"
     FRONTEND_IMAGE = "${ECR_REGISTRY}/polling-frontend:${IMAGE_TAG}"
@@ -25,39 +24,28 @@ pipeline {
   }
 
   stages {
-    stage('Checkout DevOps Repo') {
+    stage('Checkout') {
       steps {
         checkout scm
       }
     }
 
-    stage('Checkout Application Repositories') {
-      steps {
-        dir('backend-src') {
-          git branch: 'main', url: env.BACKEND_REPO
-        }
-        dir('frontend-src') {
-          git branch: 'main', url: env.FRONTEND_REPO
-        }
-      }
-    }
-
     stage('Backend Build and Test') {
       steps {
-        dir('backend-src') {
-          sh './mvnw clean verify'
+        dir('backend') {
+          sh 'mvn clean package -DskipTests'
         }
       }
       post {
         always {
-          junit allowEmptyResults: true, testResults: 'backend-src/target/surefire-reports/*.xml'
+          junit allowEmptyResults: true, testResults: 'backend/target/surefire-reports/*.xml'
         }
       }
     }
 
     stage('Frontend Build') {
       steps {
-        dir('frontend-src') {
+        dir('frontend') {
           sh 'npm ci'
           sh 'npm run build'
         }
@@ -68,10 +56,10 @@ pipeline {
       parallel {
         stage('Backend SonarQube') {
           steps {
-            dir('backend-src') {
+            dir('backend') {
               withSonarQubeEnv('sonarqube-server') {
                 sh '''
-                  ./mvnw sonar:sonar \
+                  mvn sonar:sonar \
                     -Dsonar.projectKey=voting-backend \
                     -Dsonar.projectName=voting-backend
                 '''
@@ -81,7 +69,7 @@ pipeline {
         }
         stage('Frontend SonarQube') {
           steps {
-            dir('frontend-src') {
+            dir('frontend') {
               withSonarQubeEnv('sonarqube-server') {
                 sh '''
                   npx sonar-scanner \
@@ -106,12 +94,8 @@ pipeline {
 
     stage('Build Docker Images') {
       steps {
-        dir('backend-src') {
-          sh "docker build -t ${BACKEND_IMAGE} ."
-        }
-        dir('frontend-src') {
-          sh "docker build -t ${FRONTEND_IMAGE} ."
-        }
+        sh "docker build -t ${BACKEND_IMAGE} ./backend"
+        sh "docker build -t ${FRONTEND_IMAGE} ./frontend"
       }
     }
 
@@ -150,22 +134,10 @@ pipeline {
         sh '''
           git config user.name "jenkins"
           git config user.email "jenkins@local"
-          python - <<'PY'
-from pathlib import Path
-path = Path("k8s/kustomization.yml")
-text = path.read_text()
-text = text.replace("140311410153.dkr.ecr.ap-south-1.amazonaws.com/polling-backend", "${ECR_REGISTRY}/polling-backend")
-text = text.replace("140311410153.dkr.ecr.ap-south-1.amazonaws.com/polling-frontend", "${ECR_REGISTRY}/polling-frontend")
-lines = []
-count = 0
-for line in text.splitlines():
-    if line.strip().startswith("newTag:"):
-        count += 1
-        lines.append(f"    newTag: ${IMAGE_TAG}")
-    else:
-        lines.append(line)
-path.write_text("\\n".join(lines) + "\\n")
-PY
+          cd k8s
+          kustomize edit set image voting-backend=${ECR_REGISTRY}/polling-backend:${IMAGE_TAG}
+          kustomize edit set image voting-frontend=${ECR_REGISTRY}/polling-frontend:${IMAGE_TAG}
+          cd ..
           git add k8s/kustomization.yml
           git diff --cached --quiet || git commit -m "Update GitOps image tags to ${IMAGE_TAG}"
           git push origin HEAD:${GITOPS_BRANCH}

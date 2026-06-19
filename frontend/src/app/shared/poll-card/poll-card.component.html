@@ -1,0 +1,69 @@
+<article class="poll-card">
+  <div class="poll-top">
+    <div>
+      <p class="poll-label">Poll #{{ poll.id }}</p>
+      <h2>{{ poll.question }}</h2>
+    </div>
+
+    <div class="poll-actions">
+      <span class="status-badge" [class.closed]="poll.status === 'CLOSED'">{{ poll.status }}</span>
+      @if (poll.winningOption) {
+        <span class="winner-badge">Winner: {{ poll.winningOption }}</span>
+      }
+      <a class="detail-link" [routerLink]="['/polls', poll.id]">Open Details</a>
+    </div>
+  </div>
+
+  <div class="options">
+    @for (option of poll.options; track option.voteOption; let i = $index) {
+      <div class="option-row">
+        <div class="option-copy">
+          <div class="option-heading">
+            <strong>{{ option.voteOption }}</strong>
+            <span>{{ option.voteCount }} votes | {{ option.percentage }}%</span>
+          </div>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill" [style.width.%]="option.percentage"></div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="vote-button"
+          [disabled]="!canVote() || isVoting(i)"
+          (click)="submitVote(i)"
+        >
+          @if (isVoting(i)) {
+            Voting...
+          } @else if (poll.status === 'CLOSED') {
+            Closed
+          } @else if (hasVoted) {
+            Voted
+          } @else {
+            Vote
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (hasVoted) {
+    <p class="vote-note">This browser has already voted on this poll.</p>
+  } @else if (poll.status === 'CLOSED') {
+    <p class="vote-note">Poll is closed.</p>
+  }
+
+  <footer class="poll-footer">
+    <div>
+      <span>Total votes</span>
+      <strong>{{ poll.totalVotes }}</strong>
+    </div>
+
+    @if (showMeta) {
+      <div class="poll-dates">
+        <span>Created: {{ poll.createdAt ? (poll.createdAt | date: 'medium') : 'Not available' }}</span>
+        <span>Updated: {{ poll.updatedAt ? (poll.updatedAt | date: 'medium') : 'Not available' }}</span>
+      </div>
+    }
+  </footer>
+</article>

@@ -1,0 +1,13 @@
+<section class="toast-stack" aria-live="polite" aria-atomic="true">
+  @for (toast of toastService.toasts$ | async; track toast.id) {
+    <article class="toast-card" [class.success]="toast.type === 'success'" [class.error]="toast.type === 'error'">
+      <div class="toast-copy">
+        <strong>{{ toast.title }}</strong>
+        <p>{{ toast.message }}</p>
+      </div>
+      <button type="button" class="dismiss-button" (click)="toastService.dismiss(toast.id)" aria-label="Dismiss notification">
+        ×
+      </button>
+    </article>
+  }
+</section>

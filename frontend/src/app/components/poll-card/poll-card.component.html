@@ -1,0 +1,58 @@
+<article class="poll-card">
+  <div class="poll-top">
+    <div>
+      <p class="poll-label">Poll #{{ poll.id ?? 'new' }}</p>
+      <h2>{{ poll.question }}</h2>
+    </div>
+
+    <div class="poll-actions">
+      @if (hasVoted) {
+        <span class="badge voted-badge">Voted</span>
+      }
+      @if (winningOption) {
+        <span class="badge winner-badge">Winner: {{ winningOption }}</span>
+      }
+      <a class="detail-link" [routerLink]="['/polls', poll.id]">Open details</a>
+    </div>
+  </div>
+
+  <div class="options">
+    @for (option of poll.options; track option.voteOption; let i = $index) {
+      <div class="option-row">
+        <div class="option-copy">
+          <strong>{{ option.voteOption }}</strong>
+          <span>{{ option.voteCount }} votes</span>
+        </div>
+
+        <button
+          type="button"
+          class="vote-button"
+          [class.voted]="isOptionSelected(i)"
+          [disabled]="isVoteDisabled(i)"
+          (click)="submitVote(i)"
+        >
+          @if (isVoting(i)) {
+            Voting...
+          } @else if (isOptionSelected(i)) {
+            Your vote
+          } @else if (hasVoted) {
+            Voted
+          } @else {
+            Vote
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (hasVoted) {
+    <p class="vote-note">This browser has already voted on this poll.</p>
+  }
+
+  <app-poll-results [poll]="poll" />
+
+  <footer class="poll-footer">
+    <span>Total votes</span>
+    <strong>{{ totalVotes }}</strong>
+  </footer>
+</article>
