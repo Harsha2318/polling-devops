@@ -183,10 +183,13 @@ terraform apply
 For the full temporary-environment workflow:
 
 ```powershell
+aws configure export-credentials --profile default --format powershell | Invoke-Expression
 .\scripts\create-all.ps1
 .\scripts\check-status.ps1
 .\scripts\destroy-all.ps1
 ```
+
+If you authenticate with `aws login`, export the credentials into the current PowerShell session before Terraform or EKS commands. The helper scripts now try to do this automatically, but doing it manually first is still the safest first-run flow.
 
 ## AWS cost guidance
 

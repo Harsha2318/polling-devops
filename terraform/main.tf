@@ -27,7 +27,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name                                         = "${var.project_name}-public-${count.index + 1}"
+    Name                                        = "${var.project_name}-public-${count.index + 1}"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"
   }
@@ -59,10 +59,10 @@ resource "aws_security_group" "eks_nodes" {
   vpc_id      = aws_vpc.polling.id
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
   }
 
   egress {
