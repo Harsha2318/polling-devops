@@ -92,23 +92,27 @@ The `Jenkinsfile` is designed for the next CI/CD milestone and follows this orde
 
 Expected Jenkins setup:
 
-- Jenkins tools:
-  - `jdk17`
-  - `node18`
+- Jenkins server packages:
+  - Java 21 for Jenkins
+  - Maven for the Spring Boot backend build
+  - Node.js and npm for the Angular frontend build
+  - Docker for image builds
+  - AWS CLI for ECR login and push
+  - Kustomize for GitOps image tag updates
+  - Trivy for image scanning
 - Jenkins plugins:
   - Pipeline
   - Git
   - JUnit
   - SonarQube Scanner
-  - Docker Pipeline
 - Jenkins credentials:
-  - `aws-ecr-creds`
-- Jenkins SonarQube server name:
+  - `github-token` as username/password, where the password is a GitHub token with repository contents read/write access
+- Optional Jenkins SonarQube server name:
   - `sonarqube-server`
 
-For the final GitOps push stage, Jenkins also needs permission to push commits back to the DevOps repository branch that Argo CD watches.
+The Jenkinsfile defaults `ENABLE_SONAR` to `false` so a first deployment can run without blocking on SonarQube setup. Enable it later after configuring the SonarQube server in Jenkins.
 
-For a cleaner AWS setup, Jenkins should run on a separate EC2 build machine with Docker, Maven, Node.js, AWS CLI, and Kustomize installed.
+For AWS access, prefer an EC2 IAM role with ECR push permissions instead of storing AWS keys in Jenkins.
 
 ## ECR image push notes
 
@@ -192,6 +196,15 @@ aws configure export-credentials --profile default --format powershell | Invoke-
 .\scripts\check-status.ps1
 .\scripts\destroy-all.ps1
 ```
+
+For a stricter future cleanup that also removes manually created Jenkins EC2 resources and checks common hidden AWS cost sources, use:
+
+```powershell
+.\scripts\destroy-aws-demo.ps1
+.\scripts\destroy-aws-demo.ps1 -Execute
+```
+
+See [AWS_CLEANUP_RUNBOOK.md](D:/Harsha%20P/projects/devops/polling-devops/AWS_CLEANUP_RUNBOOK.md) for the full cleanup process and verification commands.
 
 If you authenticate with `aws login`, export the credentials into the current PowerShell session before Terraform or EKS commands. The helper scripts now try to do this automatically, but doing it manually first is still the safest first-run flow.
 

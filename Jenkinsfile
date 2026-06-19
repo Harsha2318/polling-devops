@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  parameters {
+    booleanParam(name: 'ENABLE_SONAR', defaultValue: false, description: 'Run SonarQube analysis and quality gate checks')
+  }
+
   options {
     timestamps()
     ansiColor('xterm')
@@ -17,11 +21,6 @@ pipeline {
     TRIVY_SEVERITY = 'HIGH,CRITICAL'
     GITOPS_BRANCH = 'main'
     GITHUB_REPO = 'github.com/Harsha2318/polling-devops.git'
-  }
-
-  tools {
-    jdk 'jdk17'
-    nodejs 'node18'
   }
 
   stages {
@@ -54,6 +53,9 @@ pipeline {
     }
 
     stage('SonarQube Analysis') {
+      when {
+        expression { params.ENABLE_SONAR }
+      }
       parallel {
         stage('Backend SonarQube') {
           steps {
@@ -86,6 +88,9 @@ pipeline {
     }
 
     stage('Quality Gate') {
+      when {
+        expression { params.ENABLE_SONAR }
+      }
       steps {
         timeout(time: 10, unit: 'MINUTES') {
           waitForQualityGate abortPipeline: true
