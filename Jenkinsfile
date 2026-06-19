@@ -16,6 +16,7 @@ pipeline {
     FRONTEND_IMAGE = "${ECR_REGISTRY}/polling-frontend:${IMAGE_TAG}"
     TRIVY_SEVERITY = 'HIGH,CRITICAL'
     GITOPS_BRANCH = 'main'
+    GITHUB_REPO = 'github.com/Harsha2318/polling-devops.git'
   }
 
   tools {
@@ -33,7 +34,7 @@ pipeline {
     stage('Backend Build and Test') {
       steps {
         dir('backend') {
-          sh 'mvn clean package -DskipTests'
+          sh 'mvn clean verify'
         }
       }
       post {
@@ -112,11 +113,9 @@ pipeline {
 
     stage('Login To ECR') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-creds']]) {
-          sh '''
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-          '''
-        }
+        sh '''
+          aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+        '''
       }
     }
 
@@ -131,17 +130,20 @@ pipeline {
 
     stage('Update GitOps Manifests') {
       steps {
-        sh '''
-          git config user.name "jenkins"
-          git config user.email "jenkins@local"
-          cd k8s
-          kustomize edit set image voting-backend=${ECR_REGISTRY}/polling-backend:${IMAGE_TAG}
-          kustomize edit set image voting-frontend=${ECR_REGISTRY}/polling-frontend:${IMAGE_TAG}
-          cd ..
-          git add k8s/kustomization.yml
-          git diff --cached --quiet || git commit -m "Update GitOps image tags to ${IMAGE_TAG}"
-          git push origin HEAD:${GITOPS_BRANCH}
-        '''
+        withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+          sh '''
+            git config user.name "jenkins"
+            git config user.email "jenkins@local"
+            cd k8s
+            kustomize edit set image voting-backend=${ECR_REGISTRY}/polling-backend:${IMAGE_TAG}
+            kustomize edit set image voting-frontend=${ECR_REGISTRY}/polling-frontend:${IMAGE_TAG}
+            cd ..
+            git add k8s/kustomization.yml
+            git diff --cached --quiet || git commit -m "Update GitOps image tags to ${IMAGE_TAG}"
+            git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@${GITHUB_REPO}
+            git push origin HEAD:${GITOPS_BRANCH}
+          '''
+        }
       }
     }
   }
