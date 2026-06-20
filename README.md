@@ -6,6 +6,8 @@ This repository now covers the first full DevOps workflow for the polling applic
 
 If you want to use Amazon EKS, treat it as a temporary demo environment and destroy it after testing. See [AWS_FREE_TIER_PLAN.md](D:/Harsha%20P/projects/devops/polling-devops/AWS_FREE_TIER_PLAN.md).
 
+For the full implementation walkthrough, architecture, setup steps, verification commands, troubleshooting notes, and interview explanation, see [PROJECT_IMPLEMENTATION_GUIDE.md](D:/Harsha%20P/projects/devops/polling-devops/PROJECT_IMPLEMENTATION_GUIDE.md).
+
 ## What this repo does
 
 - Runs the full polling stack with Docker Compose
