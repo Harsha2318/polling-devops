@@ -1,20 +1,20 @@
 # polling-devops
 
-This repository is the DevOps layer for the polling application. It now contains the backend source, frontend source, GitOps manifests, Terraform, and CI/CD automation in one place so Jenkins can build everything directly from this repository.
+This repository is the DevOps and GitOps layer for the polling application. Backend and frontend source code live in separate service repositories, while this repository owns Terraform, Kubernetes manifests, Argo CD configuration, monitoring references, and cleanup automation.
 
-This repository now covers the first full DevOps workflow for the polling application: local Compose, Jenkins CI, SonarQube analysis, Nexus image storage, Trivy security scanning, Kubernetes deployment manifests, Terraform AWS provisioning, Argo CD GitOps delivery, and monitoring references.
+This repository now supports a microservices-style workflow for the polling application: each service repository has its own Jenkins CI/CD pipeline, images are pushed to Amazon ECR, this GitOps repository receives image tag updates, and Argo CD deploys the result to Kubernetes.
 
 If you want to use Amazon EKS, treat it as a temporary demo environment and destroy it after testing. See [AWS_FREE_TIER_PLAN.md](D:/Harsha%20P/projects/devops/polling-devops/AWS_FREE_TIER_PLAN.md).
 
-For the full implementation walkthrough, architecture, setup steps, verification commands, troubleshooting notes, and interview explanation, see [PROJECT_IMPLEMENTATION_GUIDE.md](D:/Harsha%20P/projects/devops/polling-devops/PROJECT_IMPLEMENTATION_GUIDE.md).
+For the split-repository microservices flow, see [MICROSERVICES_CICD_RUNBOOK.md](D:/Harsha%20P/projects/devops/polling-devops/MICROSERVICES_CICD_RUNBOOK.md).
 
 ## What this repo does
 
-- Runs the full polling stack with Docker Compose
+- Runs the full polling stack with Docker Compose after service images are built separately
 - Connects the frontend and backend containers on one shared Docker network
 - Provides local observability with Prometheus and Grafana
 - Includes SonarQube and Nexus for CI/CD work
-- Includes a Jenkins pipeline that builds, scans, pushes, and updates GitOps manifests
+- Includes a Jenkins validation pipeline for GitOps and infrastructure files
 - Includes Kubernetes, Terraform, Argo CD, one-command EKS create/destroy scripts, and monitoring scaffolding
 
 ## Repository structure
@@ -27,8 +27,6 @@ polling-devops/
 |-- .env.example
 |-- README.md
 |-- argocd/
-|-- backend/
-|-- frontend/
 |-- k8s/
 |-- scripts/
 |-- terraform/
@@ -37,33 +35,31 @@ polling-devops/
 
 ## Source layout
 
-- `backend/` contains the Spring Boot application source and backend Dockerfile
-- `frontend/` contains the Angular application source and frontend Dockerfile
-- Jenkins builds both directly from this repo and does not need to clone separate application repositories
+- Backend source lives in `https://github.com/Harsha2318/voting_app`
+- Frontend source lives in `https://github.com/Harsha2318/Polling_Application`
+- This repository contains deployment state only
 
 ## Prerequisites
 
 - Docker Desktop or Docker Engine with Compose support
-- Local clones of:
-  - `voting_app`
-  - `Polling_Application`
+- Local clones of `voting_app` and `Polling_Application` when building service images locally
 - Ports `80`, `3000`, `3306`, `8080`, `8081`, `8082`, `9000`, and `9090` available on your machine
 
 ## Build the backend image locally
 
-From this repository:
+From the backend service repository:
 
-```bash
-cd backend
+```powershell
+cd "D:\Harsha P\projects\devops\voting_app"
 docker build -t voting-backend:latest .
 ```
 
 ## Build the frontend image locally
 
-From this repository:
+From the frontend service repository:
 
-```bash
-cd frontend
+```powershell
+cd "D:\Harsha P\projects\devops\Polling_Application"
 docker build -t voting-frontend:latest .
 ```
 
@@ -79,18 +75,23 @@ Then update `MYSQL_ROOT_PASSWORD` and any other values you want to change before
 
 ## Jenkins pipeline flow
 
-The `Jenkinsfile` is designed for the next CI/CD milestone and follows this order:
+The service Jenkinsfiles live in their own repositories:
 
-1. Check out this DevOps repository
-2. Build and test the backend from `backend/`
-3. Build the frontend from `frontend/`
-4. Run SonarQube analysis for both repos
-5. Wait for the quality gate
-6. Build Docker images
-7. Run Trivy image scans
-8. Push images to Amazon ECR
-9. Update GitOps image tags in this repository
-10. Let Argo CD sync the Kubernetes cluster
+- `voting_app/Jenkinsfile` builds, tests, scans, and publishes the backend image
+- `Polling_Application/Jenkinsfile` builds, scans, and publishes the frontend image
+- Both service pipelines update `k8s/kustomization.yml` in this repository
+- This repository's `Jenkinsfile` validates Kustomize and Terraform only
+
+Service pipeline order:
+
+1. Check out one service repository
+2. Build and test that service
+3. Optionally run SonarQube analysis
+4. Build that service's Docker image
+5. Run Trivy image scan
+6. Push the image to Amazon ECR
+7. Update this repository's GitOps image tag
+8. Let Argo CD sync the Kubernetes cluster
 
 Expected Jenkins setup:
 
@@ -112,7 +113,7 @@ Expected Jenkins setup:
 - Optional Jenkins SonarQube server name:
   - `sonarqube-server`
 
-The Jenkinsfile defaults `ENABLE_SONAR` to `false` so a first deployment can run without blocking on SonarQube setup. Enable it later after configuring the SonarQube server in Jenkins.
+The service Jenkinsfiles default `ENABLE_SONAR` to `false` so a first deployment can run without blocking on SonarQube setup. Enable it later after configuring the SonarQube server in Jenkins.
 
 For AWS access, prefer an EC2 IAM role with ECR push permissions instead of storing AWS keys in Jenkins.
 
@@ -150,8 +151,8 @@ Argo CD manifests are provided in the `argocd/` folder for:
 
 Recommended flow:
 
-1. Jenkins builds, scans, and pushes images to ECR.
-2. Jenkins updates `k8s/kustomization.yml` with the new image tag and pushes that commit.
+1. The backend and frontend Jenkins jobs build, scan, and push their own images to ECR.
+2. Each service job updates its own image tag in `k8s/kustomization.yml` and pushes that commit.
 3. Argo CD watches this repository and syncs the cluster automatically.
 
 The namespace used for the application workloads is `polling-app`.

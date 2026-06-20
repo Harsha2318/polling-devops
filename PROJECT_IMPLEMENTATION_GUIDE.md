@@ -1,5 +1,7 @@
 # Polling DevOps Project Implementation Guide
 
+> This document is historical for the original single-repository milestone. The current implementation is split into service repositories and a GitOps repository. Use [MICROSERVICES_CICD_RUNBOOK.md](D:/Harsha%20P/projects/devops/polling-devops/MICROSERVICES_CICD_RUNBOOK.md) for the active process.
+
 This document explains the complete DevOps implementation for the polling application: what was built, how the pieces connect, how to run it locally, how to deploy it to AWS EKS through Jenkins and Argo CD, how to verify it, and how to clean everything up to avoid AWS cost.
 
 ## Current Status
