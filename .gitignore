@@ -4,6 +4,8 @@
 .idea
 .vscode
 .terraform/
+terraform/*.tfvars
+!terraform/*.tfvars.example
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
@@ -11,4 +13,3 @@ ansible/inventory.ini
 kubeconfig
 trivy-report.txt
 junit.xml
-

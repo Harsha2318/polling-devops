@@ -11,11 +11,10 @@ server:
       metrics_path: /actuator/prometheus
       static_configs:
         - targets:
-            - voting-backend.polling.svc.cluster.local:8080
+            - voting-backend.polling-app.svc.cluster.local:8080
 
 alertmanager:
   enabled: false
 
 pushgateway:
   enabled: false
-
